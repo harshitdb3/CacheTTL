@@ -16,39 +16,48 @@ class Cache
         }   
     }
 
-    set(key, value, expiryDuration = this.defaultExpiryDuration) 
+    async set(key, value, expiryDuration = this.defaultExpiryDuration) 
     {
-        let expireAt;
-
-        if (expiryDuration > 0) {
-        expireAt = Date.now() + expiryDuration;
-        }
-
-        this.kvstore[key] = {
-        value: value,
-        expireAt: expireAt,
-        };
-
+        return new Promise((resolve, reject) => {
+            if(this.kvstore.has(key))
+            {
+                reject('Key already exists');
+                return;
+            }
+    
+            let expireAt;
+    
+            if (expiryDuration > 0) {
+            expireAt = Date.now() + expiryDuration;
+            }
+    
+            this.kvstore[key] = {
+            value: value,
+            expireAt: expireAt,
+            };
+            resolve();
+        });     
     }
     
-     get(key) 
+    async get(key) 
     {
+        return new Promise((resolve, reject) => {
 
+            const data = this.kvstore[key];
 
-        const data = this.kvstore[key];
-
-        if (!data) {
-        return undefined;
-        }
-
-        const { value, expireAt } = data;
-
-        if (expireAt && Date.now() >= expireAt) {
-        delete this.kvstore[key];
-        return undefined;
-        }
-        return value;
-
+            if (!data) {
+            reject('Key does not exist');
+            return;
+            }
+    
+            const { value, expireAt } = data;
+    
+            if (expireAt && Date.now() >= expireAt) {
+            delete this.kvstore[key];
+            return undefined;
+            }
+            resolve(value);
+        });
     }
 
     purge()
